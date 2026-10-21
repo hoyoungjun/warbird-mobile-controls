@@ -102,14 +102,13 @@ fi
 export PYTHON_BIN
 
 cleanup_and_reward() {
-    local exit_code=$?
     mkdir -p /logs/verifier || {
         echo "ERROR: cannot create /logs/verifier directory" >&2
         exit 1
     }
     # Backstop ONLY, for the narrow window before the prologue above ran. The
     # grading step below writes the reward itself, from the parsed results.
-    # Deriving it here from $exit_code instead would hand the decision to a
+    # Deriving it here from a process status instead would hand the decision to a
     # signal anything in this container can forge -- a sitecustomize.py on
     # sys.path that registers an atexit hook calling os._exit(0) turns every
     # failing run into a full-reward run, and the verifier stores reward.txt
@@ -122,7 +121,6 @@ cleanup_and_reward() {
     rm -f "${STDOUT_LOG:-}" "${STDERR_LOG:-}" 2>/dev/null || true
     rm -rf "${CONFIG_TMP_DIR:-}" 2>/dev/null || true
     finalize_reward_json
-    exit "${exit_code}"
 }
 
 STDOUT_LOG=$(mktemp) || {
@@ -244,6 +242,32 @@ if [ -s "$RESET_SCRIPT" ]; then
     }
 fi
 
+# Materialize the hidden tests only after the candidate has finished. Keeping
+# them in config.json's test_patch prevents the solving agent from reading or
+# modifying the tests that determine its reward.
+TEST_PATCH_FILE="$CONFIG_TMP_DIR/test.patch"
+if ! "$PYTHON_BIN" -I -S - "$TEST_PATCH_FILE" /tests/config.json <<'PATCH_EOF'
+import json
+import pathlib
+import sys
+
+with open(sys.argv[2], encoding='utf-8') as source:
+    config = json.load(source)
+patch = config.get('test_patch')
+if not isinstance(patch, str) or not patch.strip():
+    raise ValueError('test_patch must be a non-empty string')
+pathlib.Path(sys.argv[1]).write_text(patch, encoding='utf-8')
+PATCH_EOF
+then
+    echo "ERROR: test_patch could not be materialized - refusing to grade"
+    exit 1
+fi
+echo "Applying hidden test patch"
+/usr/bin/git apply --whitespace=nowarn "$TEST_PATCH_FILE" || {
+    echo "ERROR: Hidden test patch failed to apply"
+    exit 1
+}
+
 # Run tests
 set +e
 if [ -n "$TEST_FILES" ]; then
@@ -251,7 +275,6 @@ if [ -n "$TEST_FILES" ]; then
 else
     /bin/bash /tests/run_script.sh > "$STDOUT_LOG" 2> "$STDERR_LOG"
 fi
-RUN_EXIT_CODE=$?
 set -e
 
 # Parse test output
@@ -303,7 +326,7 @@ def write_reward(passed):
 
 # Write the failing reward up front so every early exit below -- and any crash
 # in between -- leaves a 0 behind. Only the success branch at the very end
-# overwrites it, and it does so from the parsed results, never from a $?.
+# overwrites it, and it does so from the parsed results, never process status.
 write_reward(False)
 
 with open(sys.argv[1], 'r') as f:
@@ -408,6 +431,3 @@ else:
         print(f"Missing tests: {list(missing)}")
     sys.exit(1)
 EVAL_EOF
-
-EVAL_EXIT_CODE=$?
-exit "${EVAL_EXIT_CODE}"

@@ -18,7 +18,7 @@ set -e
 run_all_tests() {
   echo "Running all tests..."
   cd /app
-  python -m pytest -v -rap --tb=short || true
+  python3 -m pytest -v -rap --tb=short || true
 }
 
 run_selected_tests() {
@@ -29,7 +29,7 @@ run_selected_tests() {
   for test_file in "${test_files[@]}"; do
     echo "Running test: $test_file"
     test_path=$(echo "$test_file" | sed 's/::.*//')
-    python -m pytest "$test_path" -v -rap --tb=short || true
+    python3 -m pytest "$test_path" -v -rap --tb=short || true
   done
 }
 

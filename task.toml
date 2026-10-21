@@ -13,6 +13,8 @@ keywords = []
 
 [metadata]
 tags = ["aai-oss"]
+author_name = "Hoyoung Jun"
+author_email = "hoyoungjun@meta.com"
 # Coding Data Taxonomy. Fill before validation: each axis takes up to 3
 # values, and category_subcategory is required for each sub-domain that has
 # sub-categories, keyed by that sub-domain.
