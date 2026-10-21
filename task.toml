@@ -1,0 +1,57 @@
+schema_version = "1.1"
+
+[task]
+name = "codimango/warbird-mobile-controls"
+description = ""
+# Required task classification. Fill every blank value before validation.
+# Valid values: https://fburl.com/codimango-manifest-values
+track_assignment = "swe-bench-external-repos"
+workstream = "swe_public_repo"
+format = "swe_bench_single_turn"
+authors = []
+keywords = []
+
+[metadata]
+tags = ["aai-oss"]
+# Coding Data Taxonomy. Fill before validation: each axis takes up to 3
+# values, and category_subcategory is required for each sub-domain that has
+# sub-categories, keyed by that sub-domain.
+category_usecase = ["improve_ux"]
+category_subdomain = ["web_frontend", "games_and_simulation"]
+category_subcategory = { web_frontend = ["css_layout"], games_and_simulation = ["game_logic"] }
+reward_type = "binary"
+
+[verifier]
+network_mode = "no-network"
+# Isolate grading from the agent: run the verifier in a fresh container so the
+# agent's code can't read the oracle under /tests at verify time. Opt-in —
+# uncomment to enable (also requires a verifier env def under tests/).
+# environment_mode = "separate"
+timeout_sec = 600.0
+# Do NOT drop the grader to a non-root user on TBR: VMVM flattens file
+# ownership to 0:0, so a non-root grader loses read access to the files it has
+# to grade. Isolate in-process agent code (Flow B) with the test.sh OS-user
+# recipe instead -- a root grader that runs only the agent call as a
+# restricted user.
+# user = "nobody"
+
+[agent]
+network_mode = "allowlist"
+allowed_hosts = ["api.anthropic.com", "api.ai.meta.com", "api.openai.com"]
+timeout_sec = 600.0
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 600.0
+cpus = 4
+memory_mb = 8192
+storage_mb = 10240
+gpus = 0
+allow_internet = true
+mcp_servers = []
+
+[verifier.env]
+
+[environment.env]
+
+[solution.env]
