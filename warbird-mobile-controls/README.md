@@ -18,7 +18,8 @@ poor but functional mobile layout fails the dedicated UI-quality check. Hidden
 grading exercises touch-only play across six portrait and landscape phone
 viewports, responsive layout quality, multitouch/release behavior, rotation,
 desktop compatibility, screenshots, and a gameplay recording. It intentionally
-does not prescribe the model's control design or exact layout.
+does not prescribe the model's control design or exact layout: mirrored and
+four-button pitch/roll alternatives also pass all seven tests.
 
 ## Authoring policy
 
