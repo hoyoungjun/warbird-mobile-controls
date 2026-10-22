@@ -9,9 +9,8 @@ without changing how the game plays on desktop.
 
 Concretely, you must:
 
-1. Inventory every gameplay-essential input in the source (movement, fire /
-   primary action, and any secondary actions such as pause, start, or special
-   abilities).
+1. Inspect the game source and inventory every gameplay-essential input
+   yourself. Do not assume the set of controls; discover it from the code.
 2. Implement an on-screen touch overlay that exposes a touch equivalent for
    each of those inputs.
 3. Emit a machine-readable layout manifest describing the overlay geometry
@@ -33,15 +32,18 @@ Concretely, you must:
 
 ## What to build
 
-- A virtual joystick for directional movement, resting on the **left** side
-  of the screen (genre convention). It must support continuous drag and
-  diagonal input, and return to neutral on release.
-- One touch button per discrete game action (fire, secondary actions),
-  grouped on the **right** side. The most frequently used action (fire) gets
-  the largest button in the most comfortable spot (bottom-right, under the
-  right thumb).
-- Multi-touch must work: e.g. steering with the left thumb while holding
-  fire with the right thumb.
+- Inspect the source to determine which inputs matter for gameplay. Every
+  existing bound keyboard command discovered in the source needs a touch
+  equivalent, including flight/movement inputs, the primary action,
+  camera/view, reset/restart, and pause/menu commands. Discover the actual
+  mappings from the code; do not assume the set of controls.
+- Provide a virtual joystick for directional movement, on the **left** side
+  of the screen. It must support continuous drag and diagonal input, and
+  return to neutral on release.
+- Provide touch buttons for the discrete game actions, on the **right** side
+  of the screen.
+- Multi-touch must work: steering and using actions at the same time must be
+  possible.
 - Touch input must drive the **same code path** as the existing keyboard
   input (synthesize the same events or call the same handlers), not a
   parallel reimplementation of game logic.
@@ -52,35 +54,48 @@ Concretely, you must:
   suitable `viewport` meta tag, no page scroll/zoom while playing.
 - Prefer adding new files for the overlay; keep edits to existing game logic
   to minimal wiring.
+- You decide the exact coordinates, spacing, sizing, grouping, visual
+  priority, and orientation-specific composition. The left/right placement
+  above is the only directional guidance.
 
 ## Output format
 
 In addition to the working overlay, write a layout manifest to
 `mobile-controls.json` at the repository root. It is the graded, reviewable
-record of the layout. JSON, not XML: it is web-native, trivially parseable
-by the grader, and matches the JavaScript codebase.
+record of the layout, in JSON.
+
+Serialization contract (exact keys, no extra keys at any level):
+
+- The top-level object must have exactly `version` and `viewports`, with `version` equal to 1.
+- Each viewport object in `viewports` must use exactly `name`, `width`,
+  `height`, `orientation`, and `controls`.
+- Each control object in `controls` must use exactly `id`, `label`, `gameAction`,
+  and `rect`.
+- `rect` must use exactly integer CSS-pixel `x`, `y`, `width`, and `height`,
+  relative to the viewport origin.
+
+Schema shape (placeholder type names only, not layout values):
 
 ```json
 {
   "version": 1,
   "viewports": [
     {
-      "name": "compact-portrait",
-      "width": 390,
-      "height": 844,
-      "orientation": "portrait",
+      "name": "String",
+      "width": "Integer",
+      "height": "Integer",
+      "orientation": "String",
       "controls": [
         {
-          "id": "joystick",
-          "label": "Move",
-          "gameAction": "arrow-keys",
-          "rect": { "x": 24, "y": 640, "width": 140, "height": 140 }
-        },
-        {
-          "id": "btn-fire",
-          "label": "Fire",
-          "gameAction": "space",
-          "rect": { "x": 300, "y": 700, "width": 72, "height": 72 }
+          "id": "String",
+          "label": "String",
+          "gameAction": "String",
+          "rect": {
+            "x": "Integer",
+            "y": "Integer",
+            "width": "Integer",
+            "height": "Integer"
+          }
         }
       ]
     }
@@ -88,57 +103,53 @@ by the grader, and matches the JavaScript codebase.
 }
 ```
 
+`gameAction` identifies which existing desktop input the control drives. The
+agent chooses all coordinates, sizes, spacing, grouping, visual priority,
+and orientation composition; the manifest only records the chosen final
+rendered bounding boxes.
+
 Rules for the manifest:
 
-- One entry per supported viewport (see matrix below), with `width`/`height`
-  in CSS pixels.
+- One entry per supported viewport (see matrix below).
 - Every visible touch control appears exactly once per viewport entry, with
-  its final rendered bounding box in `rect` (integers, CSS pixels relative to
-  the viewport origin).
-- `gameAction` names the desktop input the control replaces.
-- The manifest must match the rendered overlay: the grader compares manifest
-  rects against measured DOM bounding boxes.
+  its final rendered bounding box.
+- The manifest must truthfully match the rendered overlay: reported boxes
+  must correspond to the measured DOM bounding boxes of the controls.
 
 ## Viewport matrix
 
-Device names change yearly ("iPhone 18", "Galaxy", etc.); grade by CSS-pixel
-size classes instead. Support all six, i.e. three size classes in both
-orientations:
+Device names change yearly; grade by CSS-pixel size classes instead. These
+dimensions are compatibility inputs your overlay must support, not layout
+answers. Support all six, i.e. three size classes in both orientations.
+Each entry in `viewports` must use exactly the listed `name` string for its
+dimensions:
 
-| Name | Portrait (w x h) | Landscape (w x h) |
-| Compact phone | 390 x 844 | 844 x 390 |
-| Large phone | 430 x 932 | 932 x 430 |
-| Android phone | 412 x 915 | 915 x 412 |
+| `name` | width x height | Orientation |
+| `compact-portrait` | 390 x 844 | portrait |
+| `compact-landscape` | 844 x 390 | landscape |
+| `large-portrait` | 430 x 932 | portrait |
+| `large-landscape` | 932 x 430 | landscape |
+| `android-portrait` | 412 x 915 | portrait |
+| `android-landscape` | 915 x 412 | landscape |
 
 Landscape is the primary gaming orientation, but both must be playable: the
-overlay re-lays itself out per orientation (manifest entry each), keeping
-all layout rules below.
+overlay re-lays itself out per orientation, with one manifest entry per
+viewport.
 
-## UI layout rules (graded statically)
+## Layout expectations
 
-These are checked from the manifest and the rendered DOM at each of the six
-viewports:
+There is no single correct coordinate layout. Work out a layout that plays
+well at each of the six viewports, meeting these outcomes:
 
-1. **No overlaps.** Every pair of control bounding boxes is disjoint, with
-   at least a 4 px gap.
-2. **On-screen.** Every control lies fully inside the viewport with at least
-   an 8 px margin from each edge (safe-area clearance).
-3. **Reachable touch targets.** Every control is at least 44 x 44 CSS px
-   (Apple HIG / WCAG target-size floor).
-4. **Thumb zones.** The joystick center sits in the left third of the screen
-   and the bottom half; action buttons sit in the right third and the bottom
-   half. Controls are ordered by frequency of use: the most-used action
-   (fire) is closest to the bottom-right resting-thumb position and is the
-   largest action button.
-5. **Joystick on the left.** The movement control is a left-side joystick,
-   not buttons and not on the right.
-6. **Screen coverage.** The union of control bounding boxes covers at most
-   25% of the viewport area, and the central playfield rectangle (centered,
-   60% of width x 50% of height) contains no controls, so the overlay never
-   hides the important part of the scene.
-7. **Orientation fit.** All of the above hold in both portrait and landscape;
-   controls may resize/reposition between orientations but must not simply
-   be the portrait layout cropped or overflowing.
+- Comfortable for two-thumb play, with movement on the left and actions on
+  the right.
+- Controls are practically tappable, fully visible, and non-overlapping.
+- The overlay stays responsive across viewports and orientations.
+- Gameplay and HUD elements stay readable; the overlay avoids unnecessarily
+  obscuring them.
+
+Evaluation uses broad usability guardrails plus functional playtesting, not
+comparison against one golden coordinate layout.
 
 ## Playability (graded dynamically)
 
@@ -148,9 +159,9 @@ events (tap, touchstart/move/end), the game must:
 1. Start / restart from its initial screen.
 2. Move in all directions via the joystick (game state or player position
    changes accordingly).
-3. Trigger every discrete action via its button (e.g. projectiles fired,
-   pause toggled).
-4. Sustain movement and firing simultaneously (two concurrent touch points).
+3. Trigger every discrete action via its button.
+4. Sustain movement and action use simultaneously (two concurrent touch
+   points).
 5. Keep `npm run check` passing (existing checks are the desktop
    no-regression gate).
 
@@ -158,8 +169,8 @@ events (tap, touchstart/move/end), the game must:
 
 - `npm run check` passes.
 - `mobile-controls.json` exists at the repo root, validates against the
-  schema above (one entry per viewport, one rect per control), and matches
-  the rendered overlay within 2 px per edge.
-- All seven layout rules hold at all six viewports.
-- All five playability probes pass at all six viewports.
+  schema above (one entry per viewport, one box per control), and matches
+  the rendered overlay.
+- The layout expectations hold at all six viewports.
+- All playability probes pass at all six viewports.
 - Desktop keyboard/mouse play is unchanged.

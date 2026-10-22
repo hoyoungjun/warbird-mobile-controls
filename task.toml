@@ -29,7 +29,7 @@ network_mode = "no-network"
 # agent's code can't read the oracle under /tests at verify time. Opt-in —
 # uncomment to enable (also requires a verifier env def under tests/).
 # environment_mode = "separate"
-timeout_sec = 600.0
+timeout_sec = 1200.0
 # Do NOT drop the grader to a non-root user on TBR: VMVM flattens file
 # ownership to 0:0, so a non-root grader loses read access to the files it has
 # to grade. Isolate in-process agent code (Flow B) with the test.sh OS-user
