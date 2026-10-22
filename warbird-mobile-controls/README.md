@@ -1,5 +1,25 @@
 # codimango/warbird-mobile-controls
 
+Author-facing overview for the Codimango task that adapts the open-source
+[Warbird](https://github.com/jdubba1/warbird) browser game for touch-only phone
+play. The solver receives the outcome-based requirements in `instruction.md`;
+this README is not copied into the solver container.
+
+## Links and status
+
+- [Codimango task 512683](https://codimango.internalmeta.com/coding-acceleration/tasks/512683)
+- [Task repository](https://github.com/codimango/warbird-mobile-controls)
+- [Project and grading summary](https://docs.google.com/document/d/1vkq0c_DK6VKt_jJ2y03dVemXbvCqN-oqWjTi0Zn2vhw/edit)
+- [Example touch-only gameplay video](https://drive.google.com/file/d/1-i5Ga-OoUPgCwXYT8JoxvdR3_DDiX9s9/view)
+
+The reference implementation passes all seven required grader tests. The
+untouched game passes only the two desktop-regression tests, and a deliberately
+poor but functional mobile layout fails the dedicated UI-quality check. Hidden
+grading exercises touch-only play across six portrait and landscape phone
+viewports, responsive layout quality, multitouch/release behavior, rotation,
+desktop compatibility, screenshots, and a gameplay recording. It intentionally
+does not prescribe the model's control design or exact layout.
+
 ## Authoring policy
 
 Before authoring, read the [Model usage policy v2](https://codimango.internalmeta.com/tracks/t-bench#model-usage-policy) and the [Workplace v2 post](https://fb.workplace.com/groups/aaitaskquality/posts/1074223732270508). The policy page is the source of truth.

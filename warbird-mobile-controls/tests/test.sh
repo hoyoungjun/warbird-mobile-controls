@@ -263,6 +263,22 @@ then
     exit 1
 fi
 echo "Applying hidden test patch"
+if ! /usr/bin/git apply --check --whitespace=nowarn "$TEST_PATCH_FILE"; then
+    # Test-patch validation runs baseline and solution phases against the same
+    # workspace. Remove the previous phase's materialized hidden tests before
+    # applying the canonical patch again. Ordinary one-shot grading takes the
+    # forward-check branch and does not enter this block.
+    if /usr/bin/git apply --reverse --check --whitespace=nowarn "$TEST_PATCH_FILE"; then
+        echo "Removing previously materialized hidden test patch"
+        /usr/bin/git apply --reverse --whitespace=nowarn "$TEST_PATCH_FILE" || {
+            echo "ERROR: Previous hidden test patch could not be removed"
+            exit 1
+        }
+    else
+        echo "ERROR: Hidden test patch is incompatible with the workspace"
+        exit 1
+    fi
+fi
 /usr/bin/git apply --whitespace=nowarn "$TEST_PATCH_FILE" || {
     echo "ERROR: Hidden test patch failed to apply"
     exit 1
@@ -429,5 +445,8 @@ else:
     missing = all_required - passed_tests
     if missing:
         print(f"Missing tests: {list(missing)}")
-    sys.exit(1)
+    # A zero reward is a valid grading outcome, not an infrastructure error.
+    # Test-patch validation needs a successful process exit so it can consume
+    # output.json and verify the expected baseline failures.
+    sys.exit(0)
 EVAL_EOF
