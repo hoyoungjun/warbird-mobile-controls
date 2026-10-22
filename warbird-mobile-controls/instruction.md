@@ -2,21 +2,25 @@
 
 ## Objective
 
-Warbird is a desktop browser game controlled by keyboard (and possibly
-mouse). Port its gameplay inputs to a mobile touch overlay so the game is
-fully playable on a phone, in both portrait and landscape orientations,
-without changing how the game plays on desktop.
+Warbird is a desktop browser game controlled by desktop inputs (keyboard
+and possibly mouse). Make it fully playable by touch on phones, in both
+portrait and landscape orientations, without regressing desktop play.
 
 Concretely, you must:
 
-1. Inspect the game source and inventory every gameplay-essential input
-   yourself. Do not assume the set of controls; discover it from the code.
+1. Inspect the game source and inventory every gameplay-essential desktop
+   input yourself. Do not assume the set of inputs; discover it from the
+   code.
 2. Implement an on-screen touch overlay that exposes a touch equivalent for
    each of those inputs.
 3. Emit a machine-readable layout manifest describing the overlay geometry
    (see "Output format").
-4. Keep the game playable end-to-end by touch alone ("test play it"): start
-   the game, move, and use every action using only touch events.
+4. Keep the game playable end-to-end by touch alone: start/restart the game
+   and exercise every source-discovered input using only touch.
+
+You must determine the input inventory, control types, mappings, placement,
+sizing, grouping, visual priority, and orientation-specific composition from
+the source and UX needs.
 
 ## Repository and environment
 
@@ -33,30 +37,23 @@ Concretely, you must:
 ## What to build
 
 - Inspect the source to determine which inputs matter for gameplay. Every
-  existing bound keyboard command discovered in the source needs a touch
-  equivalent, including flight/movement inputs, the primary action,
-  camera/view, reset/restart, and pause/menu commands. Discover the actual
-  mappings from the code; do not assume the set of controls.
-- Provide a virtual joystick for directional movement, on the **left** side
-  of the screen. It must support continuous drag and diagonal input, and
-  return to neutral on release.
-- Provide touch buttons for the discrete game actions, on the **right** side
-  of the screen.
-- Multi-touch must work: steering and using actions at the same time must be
-  possible.
-- Touch input must drive the **same code path** as the existing keyboard
-  input (synthesize the same events or call the same handlers), not a
-  parallel reimplementation of game logic.
-- The overlay must not break desktop play: with a mouse/keyboard and a
-  desktop-size viewport, the game behaves exactly as before. Touch controls
-  appear only on touch-capable viewports (pointer: coarse / touch detection).
-- Prevent mobile browser interference: `touch-action: none` on controls, a
-  suitable `viewport` meta tag, no page scroll/zoom while playing.
-- Prefer adding new files for the overlay; keep edits to existing game logic
-  to minimal wiring.
-- You decide the exact coordinates, spacing, sizing, grouping, visual
-  priority, and orientation-specific composition. The left/right placement
-  above is the only directional guidance.
+  gameplay-essential desktop input discovered in the source needs a touch
+  equivalent. Do not assume the set of inputs.
+- Touch alone must suffice for full play, including starting/restarting from
+  the initial screen and exercising every source-discovered input.
+- Simultaneous controls must work where gameplay requires it: multiple
+  concurrent touch contacts must each take effect.
+- Releasing a control must end its input cleanly, with no stuck or lingering
+  input.
+- The overlay must avoid browser gesture interference while playing: game
+  touches must not cause page scroll, zoom, or navigation.
+- The overlay must preserve desktop behavior: with a mouse/keyboard and a
+  desktop-size viewport, the game behaves exactly as before, and touch
+  controls do not interfere.
+- You decide the input inventory, control types, mappings, placement, sizing,
+  grouping, visual priority, and orientation-specific composition. There is
+  no prescribed control set or arrangement beyond the outcomes in this
+  prompt.
 
 ## Output format
 
@@ -103,10 +100,10 @@ Schema shape (placeholder type names only, not layout values):
 }
 ```
 
-`gameAction` identifies which existing desktop input the control drives. The
-agent chooses all coordinates, sizes, spacing, grouping, visual priority,
-and orientation composition; the manifest only records the chosen final
-rendered bounding boxes.
+`gameAction` identifies which existing desktop input the control drives. You
+determine the input inventory, control types, mappings, placement, sizing,
+grouping, visual priority, and orientation-specific composition; the manifest
+only records the chosen final rendered bounding boxes.
 
 Rules for the manifest:
 
@@ -132,36 +129,35 @@ dimensions:
 | `android-portrait` | 412 x 915 | portrait |
 | `android-landscape` | 915 x 412 | landscape |
 
-Landscape is the primary gaming orientation, but both must be playable: the
-overlay re-lays itself out per orientation, with one manifest entry per
-viewport.
+Both orientations must be fully playable: the overlay adapts per
+orientation, with one manifest entry per viewport.
 
 ## Layout expectations
 
 There is no single correct coordinate layout. Work out a layout that plays
 well at each of the six viewports, meeting these outcomes:
 
-- Comfortable for two-thumb play, with movement on the left and actions on
-  the right.
-- Controls are practically tappable, fully visible, and non-overlapping.
+- Controls are practical and reachable by touch, fully visible, and
+  non-overlapping, with nothing placed offscreen.
 - The overlay stays responsive across viewports and orientations.
-- Gameplay and HUD elements stay readable; the overlay avoids unnecessarily
-  obscuring them.
+- Gameplay and HUD elements stay readable; the overlay avoids obscuring
+  important game/HUD content.
 
-Evaluation uses broad usability guardrails plus functional playtesting, not
+Evaluation uses broad usability guardrails plus dynamic playtesting, not
 comparison against one golden coordinate layout.
 
 ## Playability (graded dynamically)
 
 With touch enabled at each of the six viewports, driven only by touch
-events (tap, touchstart/move/end), the game must:
+input, the game must:
 
 1. Start / restart from its initial screen.
-2. Move in all directions via the joystick (game state or player position
-   changes accordingly).
-3. Trigger every discrete action via its button.
-4. Sustain movement and action use simultaneously (two concurrent touch
-   points).
+2. Exercise every source-discovered gameplay input (game state changes
+   accordingly).
+3. Sustain simultaneous controls where gameplay requires it (multiple
+   concurrent touch contacts).
+4. Release cleanly: ending a touch ends its input, with no stuck input and
+   no page scroll/zoom.
 5. Keep `npm run check` passing (existing checks are the desktop
    no-regression gate).
 
