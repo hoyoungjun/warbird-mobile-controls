@@ -12,14 +12,24 @@ this README is not copied into the solver container.
 - [Project and grading summary](https://docs.google.com/document/d/1vkq0c_DK6VKt_jJ2y03dVemXbvCqN-oqWjTi0Zn2vhw/edit)
 - [Example touch-only gameplay video](https://drive.google.com/file/d/1-i5Ga-OoUPgCwXYT8JoxvdR3_DDiX9s9/view)
 
-The reference implementation passes all seven required grader tests. The
-untouched game passes only the two desktop-regression tests, and a deliberately
-poor but functional mobile layout fails the dedicated UI-quality check. Hidden
-grading exercises touch-only play across six portrait and landscape phone
-viewports, responsive layout quality, multitouch/release behavior, rotation,
-desktop compatibility, screenshots, and a gameplay recording. It intentionally
-does not prescribe the model's control design or exact layout: mirrored and
-four-button pitch/roll alternatives also pass all seven tests.
+## Grading at a glance
+
+- **Playable:** touch starts/resets the game and drives every flight action,
+  fire, view, pause, multitouch, and clean release at six portrait/landscape
+  phone sizes. The probe observes inputs consumed by the game, so either
+  keyboard emulation or a direct touch-input channel is valid.
+- **Good mobile UI:** controls are visible, practical, separated, reachable,
+  accessible, responsive, visibly pressed, and kept away from central gameplay
+  and HUD content without excessive screen coverage.
+- **Compatible and reviewable:** rotation reflows safely, desktop play remains
+  unchanged, the manifest matches rendered geometry, and each run produces six
+  screenshots plus a gameplay video.
+
+The reference, mirrored, and four-button pitch/roll designs pass all seven
+tests. The untouched game passes only the two desktop-regression tests. A
+deliberately poor but functional layout passes gameplay but fails only the
+UI-quality test. Native test-patch validation passed both baseline and solution
+phases (`2f3664d33ada41dfad5ddeade95942fa`).
 
 ## Authoring policy
 
